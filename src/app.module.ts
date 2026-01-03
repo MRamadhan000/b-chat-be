@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { databaseConfig } from './config/database.config';
 import { FriendsModule } from './friends/friends.module';
+import { ConversationsModule } from './conversations/conversations.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { FriendsModule } from './friends/friends.module';
     UsersModule,
     AuthModule,
     FriendsModule,
+    ConversationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

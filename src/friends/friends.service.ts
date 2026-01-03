@@ -4,21 +4,26 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Friend, FriendStatus } from './entities/friend.entity';
 import { Repository } from 'typeorm';
 import { UsersService } from 'src/users/users.service';
+import { ConversationsService } from 'src/conversations/conversations.service';
+import { CreateConversationDto } from 'src/conversations/dto/create-conversation.dto';
+import { ConversationType } from 'src/conversations/entities/conversation.entity';
 
 @Injectable()
 export class FriendsService {
     @InjectRepository(Friend)
     private friendRepository: Repository<Friend>
 
-    constructor(private readonly userService: UsersService) { }
+    constructor(private readonly userService: UsersService,
+    private readonly conversationService: ConversationsService
+    ) { }
 
     async create(createFriendDto: CreateFriendDto, userId: number) {
-        await this.userService.findById(userId);
-        await this.userService.findById(createFriendDto.addresseeId);
+        const requesterUser = await this.userService.findById(userId);
+        const addresseUser = await this.userService.findById(createFriendDto.addresseeId);
 
         const friendRequest = this.friendRepository.create({
-            requesterId: userId,
-            addresseeId: createFriendDto.addresseeId,
+            requester: requesterUser,
+            addressee: addresseUser,
             status: FriendStatus.PENDING,
         });
 
@@ -32,7 +37,8 @@ export class FriendsService {
 
     async findById(id: number) {
         const friend = await this.friendRepository.findOne({
-            where: { id }
+            where: { id },
+            relations: ['requester', 'addressee']
         })
 
         if (!friend)
@@ -58,7 +64,7 @@ export class FriendsService {
             throw new BadRequestException(`Status ${status} tidak valid. Pilih: ${validStatuses.join(', ')}`);
         }
 
-        if (userId != data.addresseeId) {
+        if (userId != data.addressee.id) {
             throw new UnauthorizedException("Anda tidak diperkenankan mengubah data ini")
         }
 
@@ -66,8 +72,17 @@ export class FriendsService {
             throw new ConflictException("Statusnya sudah sama")
         }
 
-        data.status = newStatus;
-        return await this.friendRepository.save(data)
+        // data.status = newStatus;
+        if (newStatus == FriendStatus.ACCEPTED) {
+            await this.friendRepository.save(data)            
+
+            // createConversationObjectWithPrivateType
+            const createConversationPrivate: CreateConversationDto = {
+                participantIds: [userId, data.requester.id],
+                type: ConversationType.PRIVATE,
+            }
+            return await this.conversationService.createPrivateConversation(createConversationPrivate);
+        }
     }
 
     async getAllFriendRequest(userId: number) {
@@ -75,7 +90,7 @@ export class FriendsService {
 
         const requestList = await this.friendRepository.find({
             where: {
-                requesterId: userId
+                requester: { id: userId }
             },
             relations: ['requester', 'addressee']
         })
@@ -87,13 +102,15 @@ export class FriendsService {
 
         const friends = await this.friendRepository.find({
             where: [
-                { requesterId: userId, status: FriendStatus.ACCEPTED },
+                { requester: { id: userId }, status: FriendStatus.ACCEPTED },
 
-                { addresseeId: userId, status: FriendStatus.ACCEPTED }
+                { addressee: { id: userId }, status: FriendStatus.ACCEPTED }
 
             ],
             relations: ['requester', 'addressee']
         })
+
         return friends
     }
+
 }

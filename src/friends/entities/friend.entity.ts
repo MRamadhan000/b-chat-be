@@ -14,15 +14,7 @@ export enum FriendStatus {
 @Entity('friends')
 export class Friend {
     @PrimaryGeneratedColumn()
-    id: number;
-
-    // Tambahkan kolom ID secara eksplisit
-    @Column()
-    requesterId: number;
-
-    @Column()
-    addresseeId: number;
-
+    id: number;  
     // Relasi tetap dipertahankan untuk kebutuhan JOIN/Eager Loading
     @ManyToOne(() => User, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'requesterId' }) // Mengaitkan relasi dengan kolom requesterId
@@ -32,7 +24,7 @@ export class Friend {
     @JoinColumn({ name: 'addresseeId' }) // Mengaitkan relasi dengan kolom addresseeId
     addressee: User;
 
-    @Column({ type: 'enum', enum: FriendStatus, default: FriendStatus.PENDING })
+    @Column({ type: 'enum', enum: FriendStatus, default: FriendStatus.PENDING })    
     status: FriendStatus;
 
     @CreateDateColumn()
