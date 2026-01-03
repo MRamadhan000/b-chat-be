@@ -1,5 +1,6 @@
 // conversation.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { User } from 'src/users/entities/user.entity';
 
 export enum ConversationType {
   PRIVATE = 'private',
@@ -16,6 +17,10 @@ export class Conversation {
 
   @Column({ nullable: true })
   name?: string;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'ownerId' })
+  owner?: User;
 
   @CreateDateColumn()
   createdAt: Date;

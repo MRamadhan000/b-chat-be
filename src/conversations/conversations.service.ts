@@ -1,11 +1,12 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadGatewayException, BadRequestException, Injectable } from '@nestjs/common';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Conversation, ConversationType } from './entities/conversation.entity';
-import { Repository } from 'typeorm';
+import { Repository, DeepPartial } from 'typeorm';
 import { ConversationMember } from './entities/conversation-member.entity';
-import { existsSync } from 'fs';
-import { CreateConversationMemberDto } from './dto/create-converastion-member.dto';
+import { CreateConversationGrupDto } from './dto/create-conversation-grup.dto';
+import { UsersService } from 'src/users/users.service';
+
 @Injectable()
 export class ConversationsService {
   @InjectRepository(Conversation)
@@ -13,6 +14,8 @@ export class ConversationsService {
 
   @InjectRepository(ConversationMember)
   private conversationMemberRepository: Repository<ConversationMember>;
+
+  constructor(private readonly userService: UsersService) { }
 
   async findExistingPrivateChat(userIds: number[]): Promise<Conversation | null> {
     const [id1, id2] = userIds;
@@ -38,7 +41,7 @@ export class ConversationsService {
 
   async createPrivateConversation(createConversationDto: CreateConversationDto) {
     const existingPrivateChat = await this.findExistingPrivateChat(createConversationDto.participantIds);
-    if (existingPrivateChat) return existingPrivateChat;    
+    if (existingPrivateChat) return existingPrivateChat;
 
     const newConversation = this.conversationRepository.create({
       type: ConversationType.PRIVATE,
@@ -58,4 +61,30 @@ export class ConversationsService {
     };
   }
 
+  async createGrupConversation(createConversationDto: CreateConversationGrupDto) {
+    if (!createConversationDto.name) {
+      throw new BadRequestException("Nama grup wajib diisi");
+    }
+
+    const newConversation = this.conversationRepository.create({
+      type: ConversationType.GROUP,
+      name: createConversationDto.name,
+    });
+
+    if (createConversationDto.ownerId) {
+      newConversation.owner = await this.userService.findById(createConversationDto.ownerId);
+    }
+
+    const savedConversation = await this.conversationRepository.save(newConversation);
+
+    const members = await this.addMembersToConversation(
+      savedConversation.id,
+      createConversationDto.participantIds,
+    );
+
+    return {
+      ...savedConversation,
+      members: members,
+    };
+  }
 }

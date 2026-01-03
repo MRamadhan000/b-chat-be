@@ -46,7 +46,7 @@ export class FriendsController {
   async create(
     @GetUser('id') userId: number,
     @Body() createFriendDto: CreateFriendDto) {
-    const data = await this.friendsService.create(createFriendDto, userId)
+    const data = await this.friendsService.createPrivateRequest(createFriendDto, userId)
     return {
       message: "Success Create Request",
       data: data

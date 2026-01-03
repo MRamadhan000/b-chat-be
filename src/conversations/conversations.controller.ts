@@ -5,7 +5,10 @@ import { UpdateConversationDto } from './dto/update-conversation.dto';
 
 @Controller('conversations')
 export class ConversationsController {
-  constructor(private readonly conversationsService: ConversationsService) {}
+  constructor(private readonly conversationsService: ConversationsService) { }
 
- 
+  @Post('group')
+  async createGroup(@Body() dto: CreateConversationDto) {
+    return await this.conversationsService.createGrupConversation(dto);
+  }
 }

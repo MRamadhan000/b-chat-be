@@ -17,7 +17,7 @@ export class FriendsService {
     private readonly conversationService: ConversationsService
     ) { }
 
-    async create(createFriendDto: CreateFriendDto, userId: number) {
+    async createPrivateRequest(createFriendDto: CreateFriendDto, userId: number) {
         const requesterUser = await this.userService.findById(userId);
         const addresseUser = await this.userService.findById(createFriendDto.addresseeId);
 
