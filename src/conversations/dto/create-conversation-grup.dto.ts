@@ -1,20 +1,35 @@
-import { IsEnum, IsArray, IsOptional, IsString, IsNumber, ArrayMinSize } from 'class-validator';
+import {
+  IsArray,
+  IsString,
+  IsNumber,
+  ArrayMinSize,
+  ArrayUnique,
+  IsNotEmpty,
+  Equals,
+} from 'class-validator';
 import { ConversationType } from '../entities/conversation.entity';
 
-export class CreateConversationGrupDto {
-  @IsEnum(ConversationType)
+export class CreateConversationGroupDto {
+
+  @Equals(ConversationType.GROUP, {
+    message: 'Conversation type must be GROUP',
+  })
   type: ConversationType;
 
-  @IsString()
-  @IsOptional()
-  name?: string; // Biasanya diisi jika type adalah 'group'
+  @IsString({ message: 'Group name must be a string' })
+  @IsNotEmpty({ message: 'Group name is required' })
+  name: string;
 
-  @IsArray()
-  @IsNumber({}, { each: true })
-  @ArrayMinSize(2)
+  @IsArray({ message: 'Participant IDs must be an array' })
+  @IsNumber({}, { each: true, message: 'Each participant ID must be a number' })
+  @ArrayMinSize(2, {
+    message: 'Group must contain at least 2 participants (excluding owner)',
+  })
+  @ArrayUnique({
+    message: 'Participant IDs must be unique',
+  })
   participantIds: number[];
 
-  @IsOptional()
-  @IsNumber()
-  ownerId?: number; // ID user yang menjadi owner grup (opsional)
+  @IsNumber({}, { message: 'Owner ID must be a number' })
+  ownerId: number;
 }

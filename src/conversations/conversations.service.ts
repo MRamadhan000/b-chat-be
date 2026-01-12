@@ -1,11 +1,12 @@
-import { BadGatewayException, BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Conversation, ConversationType } from './entities/conversation.entity';
 import { Repository, DeepPartial } from 'typeorm';
 import { ConversationMember } from './entities/conversation-member.entity';
-import { CreateConversationGrupDto } from './dto/create-conversation-grup.dto';
+import { CreateConversationGroupDto } from './dto/create-conversation-grup.dto';
 import { UsersService } from 'src/users/users.service';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class ConversationsService {
@@ -15,7 +16,9 @@ export class ConversationsService {
   @InjectRepository(ConversationMember)
   private conversationMemberRepository: Repository<ConversationMember>;
 
-  constructor(private readonly userService: UsersService) { }
+  constructor(
+    private readonly userService: UsersService,
+    private readonly dataSource: DataSource) { }
 
   async findExistingPrivateChat(userIds: number[]): Promise<Conversation | null> {
     const [id1, id2] = userIds;
@@ -61,10 +64,16 @@ export class ConversationsService {
     };
   }
 
-  async createGrupConversation(createConversationDto: CreateConversationGrupDto) {
+  async createGrupConversation(createConversationDto: CreateConversationGroupDto) {
     if (!createConversationDto.name) {
       throw new BadRequestException("Nama grup wajib diisi");
     }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
 
     const newConversation = this.conversationRepository.create({
       type: ConversationType.GROUP,
